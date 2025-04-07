@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backtrader Web UI</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --primary-hover: #0056b3;
+            --border-color: #ccc;
+            --input-bg: #fff;
+            --section-bg: #f8f9fa;
+            --text-color: #333;
+            --label-color: #555;
+            --note-color: #666;
+            --error-bg: #f8d7da;
+            --error-border: #f5c6cb;
+            --error-text: #721c24;
+            --results-bg: #e9f7ef;
+            --results-border: #a9d6b7;
+        }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #e9ecef;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        h1 { 
+            text-align: center; 
+            color: var(--primary-color);
+            margin-bottom: 30px;
+        }
+        form { 
+            background-color: #fff; 
+            padding: 30px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        fieldset { 
+            margin-bottom: 25px; 
+            padding: 20px;
+            border: 1px solid var(--border-color); 
+            border-radius: 6px; 
+            background-color: var(--section-bg);
+        }
+        fieldset legend {
+            font-weight: bold;
+            font-size: 1.1em;
+            padding: 0 10px;
+            margin-left: 10px;
+            color: var(--primary-color);
+        }
+        fieldset legend input[type="checkbox"] + label {
+            font-weight: bold; /* Keep legend label bold */
+            display: inline;
+            color: var(--primary-color);
+        }
+        fieldset legend input[type="checkbox"] {
+             margin-right: 8px;
+        }
+        label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: normal; /* Make regular labels normal weight */
+            color: var(--label-color);
+            font-size: 0.95em;
+        }
+        input[type="text"], input[type="date"], input[type="number"] { 
+            display: block;
+            width: 100%; 
+            padding: 10px;
+            margin-bottom: 10px; 
+            border: 1px solid var(--border-color); 
+            border-radius: 4px; 
+            box-sizing: border-box; /* Include padding and border in element's total width/height */
+            background-color: var(--input-bg);
+            font-size: 1em;
+        }
+        input[type="checkbox"] { 
+            width: auto; 
+            margin-right: 5px; 
+            vertical-align: middle; 
+        }
+        button[type="submit"] { 
+            display: block;
+            width: 100%;
+            padding: 12px 15px; 
+            background-color: var(--primary-color); 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 1.1em;
+            transition: background-color 0.2s ease;
+            margin-top: 20px;
+        }
+        button[type="submit"]:hover { 
+            background-color: var(--primary-hover); 
+        }
+        .results, .error { 
+            margin: 30px auto; 
+            padding: 20px; 
+            border-radius: 6px; 
+            max-width: 1000px;
+            background-color: #fff; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .results { 
+             border-left: 5px solid var(--results-border);
+             background-color: var(--results-bg);
+        }
+        .error { 
+            border-left: 5px solid var(--error-border);
+            background-color: var(--error-bg); 
+            color: var(--error-text); 
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 0.95em; }
+        th { background-color: #f2f2f2; }
+        
+        .indicator-params-container { 
+            display: grid; /* Use Grid for better control */
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Responsive columns */
+            gap: 20px; 
+            border: none; 
+            padding: 0; 
+        }
+        .indicator-params-container > fieldset { 
+            margin-bottom: 0; /* Remove bottom margin since gap handles spacing */
+            background-color: #fff; /* White background for indicator boxes */
+             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .param-row {
+            /* display: flex; 
+            align-items: center; 
+            gap: 10px;  */
+            margin-bottom: 15px; /* Space between parameter rows */
+        }
+        .param-row label { 
+            /* flex-basis: 100px; 
+            text-align: right;  */
+            margin-bottom: 3px; 
+            font-weight: 500; /* Slightly bolder param labels */
+             color: #444;
+        }
+        .param-row input[type="number"] { 
+            /* flex-grow: 1; 
+            width: auto; */
+            margin-bottom: 0; 
+            font-size: 0.95em;
+        }
+        .param-minmax-group {
+             display: grid;
+             grid-template-columns: 1fr 1fr;
+             gap: 10px;
+             align-items: center;
+             margin-bottom: 5px;
+        }
+        .param-minmax-group div { /* Container for label + input */
+             display: flex;
+             flex-direction: column;
+        }
+        .param-minmax-group label {
+             font-size: 0.85em;
+             color: var(--label-color);
+             margin-bottom: 2px;
+        }
+         .param-minmax-group input {
+             margin-bottom: 0;
+             padding: 8px;
+         }
+
+        .param-description {
+             font-size: 0.85em;
+             color: var(--note-color);
+             margin-top: 2px;
+             margin-left: 5px;
+        }
+
+        small i { /* Note about min value usage */
+            display: block;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            color: var(--note-color);
+        }
+        hr {
+             border: none;
+             border-top: 1px solid var(--border-color);
+             margin: 15px 0;
+        }
+        .opt-note { font-size: 0.9em; color: var(--note-color); margin-top: 10px; }
+
+        /* Style for general settings date inputs */
+        .date-group { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        
+        /* Run Options Layout */
+        .run-options-container {
+             display: flex;
+             align-items: center;
+             justify-content: space-between;
+             gap: 20px;
+             flex-wrap: wrap;
+        }
+         .run-options-container > div {
+             display: flex;
+             align-items: center;
+             gap: 10px;
+         }
+         .run-options-container label { margin-bottom: 0; }
+         .run-options-container input[type="number"] { width: 80px; margin-bottom: 0; }
+
+        /* Style for randomize button */
+        button.randomize-btn {
+            padding: 3px 8px;
+            font-size: 0.8em;
+            margin-left: 15px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            vertical-align: middle;
+        }
+        button.randomize-btn:hover {
+            background-color: #5a6268;
+        }
+
+        /* Plot link style */
+        .plot-link {
+            display: inline-block;
+            margin-left: 10px;
+            padding: 5px 10px;
+            background-color: #17a2b8; /* Teal color */
+            color: white;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: background-color 0.2s ease;
+        }
+        .plot-link:hover {
+            background-color: #138496;
+            color: white;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Backtrader Web UI</h1>
+
+    <form action="{{ url_for('run_backtest_route') }}" method="post">
+        <!-- General Settings -->
+        <fieldset>
+            <legend>General Settings</legend>
+            <div class="form-group">
+                <label for="symbols">Symbol(s):</label>
+                <input type="text" id="symbols" name="symbols" value="{{ form_data.symbols_str if form_data else 'AAPL' }}" required>
+                <small>(Currently processes first symbol only)</small>
+            </div>
+            <div class="form-group">
+                <label for="timeframe">Timeframe:</label>
+                <select id="timeframe" name="timeframe" style="padding: 10px; font-size: 1em; border: 1px solid var(--border-color); border-radius: 4px;">
+                    <option value="1m" {{ 'selected' if form_data.timeframe == '1m' else '' }}>1 Minute</option>
+                    <option value="2m" {{ 'selected' if form_data.timeframe == '2m' else '' }}>2 Minutes</option>
+                    <option value="5m" {{ 'selected' if form_data.timeframe == '5m' else '' }}>5 Minutes</option>
+                    <option value="15m" {{ 'selected' if form_data.timeframe == '15m' else '' }}>15 Minutes</option>
+                    <option value="30m" {{ 'selected' if form_data.timeframe == '30m' else '' }}>30 Minutes</option>
+                    <option value="60m" {{ 'selected' if form_data.timeframe == '60m' else '' }}>60 Minutes</option>
+                    <option value="90m" {{ 'selected' if form_data.timeframe == '90m' else '' }}>90 Minutes</option>
+                    <option value="1h" {{ 'selected' if form_data.timeframe == '1h' else '' }}>1 Hour</option>
+                    <option value="1d" {{ 'selected' if form_data.timeframe == '1d' else '' }}>1 Day</option>
+                    <option value="5d" {{ 'selected' if form_data.timeframe == '5d' else '' }}>5 Days</option>
+                    <option value="1wk" {{ 'selected' if form_data.timeframe == '1wk' else '' }}>1 Week</option>
+                    <option value="1mo" {{ 'selected' if form_data.timeframe == '1mo' else '' }}>1 Month</option>
+                    <option value="3mo" {{ 'selected' if form_data.timeframe == '3mo' else '' }}>3 Months</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="initial_cash">Initial Cash:</label>
+                <input type="number" id="initial_cash" name="initial_cash" value="{{ form_data.initial_cash if form_data else '100000' }}" step="1000" min="100">
+            </div>
+            <div class="date-group">
+                <div>
+                    <label for="start_date">Start Date:</label>
+                    <input type="date" id="start_date" name="start_date" value="{{ form_data.start_date if form_data else '2022-01-01' }}" required>
+                </div>
+                <div>
+                    <label for="end_date">End Date:</label>
+                    <input type="date" id="end_date" name="end_date" value="{{ form_data.end_date if form_data else '2023-12-31' }}" required>
+                </div>
+            </div>
+        </fieldset>
+
+        <!-- Indicator Parameters -->
+        <div class="indicator-params-container">
+            <fieldset id="sma-fieldset">
+                 <legend>
+                     <input type="checkbox" id="use_sma" name="use_sma" value="yes" {{ 'checked' if form_data.use_sma else '' }}>
+                     <label for="use_sma">SMA</label>
+                     <button type="button" class="randomize-btn" data-fieldset="sma">Randomize</button>
+                 </legend>
+                 <small><i>(Min value used for single runs)</i></small>
+                 
+                 <div class="param-row">
+                     <label>SMA Short Period</label>
+                     <div class="param-minmax-group">
+                         <div><label for="sma_short_min">Min:</label><input id="sma_short_min" type="number" name="sma_short_min" value="{{ form_data.sma_short_min if form_data else '10' }}" min="1"></div>
+                         <div><label for="sma_short_max">Max:</label><input id="sma_short_max" type="number" name="sma_short_max" value="{{ form_data.sma_short_max if form_data else '15' }}" min="1"></div>
+                     </div>
+                     <div class="param-description">Faster moving average period</div>
+                 </div>
+                 
+                 <hr>
+                 <div class="param-row">
+                     <label>SMA Long Period</label>
+                      <div class="param-minmax-group">
+                         <div><label for="sma_long_min">Min:</label><input id="sma_long_min" type="number" name="sma_long_min" value="{{ form_data.sma_long_min if form_data else '25' }}" min="1"></div>
+                         <div><label for="sma_long_max">Max:</label><input id="sma_long_max" type="number" name="sma_long_max" value="{{ form_data.sma_long_max if form_data else '35' }}" min="1"></div>
+                     </div>
+                    <div class="param-description">Slower moving average period</div>
+                 </div>
+            </fieldset>
+
+             <fieldset id="rsi-fieldset">
+                 <legend>
+                     <input type="checkbox" id="use_rsi" name="use_rsi" value="yes" {{ 'checked' if form_data.use_rsi else '' }}>
+                     <label for="use_rsi">RSI</label>
+                      <button type="button" class="randomize-btn" data-fieldset="rsi">Randomize</button>
+                 </legend>
+                 <small><i>(Min value used for single runs)</i></small>
+                  
+                  <div class="param-row">
+                      <label>RSI Period</label>
+                       <div class="param-minmax-group">
+                         <div><label for="rsi_period_min">Min:</label><input id="rsi_period_min" type="number" name="rsi_period_min" value="{{ form_data.rsi_period_min if form_data else '12' }}" min="1"></div>
+                         <div><label for="rsi_period_max">Max:</label><input id="rsi_period_max" type="number" name="rsi_period_max" value="{{ form_data.rsi_period_max if form_data else '16' }}" min="1"></div>
+                     </div>
+                     <div class="param-description">Lookback period for RSI calculation</div>
+                 </div>
+                 <hr>
+                 <div class="param-row">
+                     <label>RSI Overbought Level</label>
+                      <div class="param-minmax-group">
+                         <div><label for="rsi_ob_min">Min:</label><input id="rsi_ob_min" type="number" name="rsi_ob_min" value="{{ form_data.rsi_ob_min if form_data else '65' }}" min="50" max="100"></div>
+                         <div><label for="rsi_ob_max">Max:</label><input id="rsi_ob_max" type="number" name="rsi_ob_max" value="{{ form_data.rsi_ob_max if form_data else '75' }}" min="50" max="100"></div>
+                     </div>
+                     <div class="param-description">Level above which RSI signals overbought</div>
+                 </div>
+                  <hr>
+                 <div class="param-row">
+                     <label>RSI Oversold Level</label>
+                      <div class="param-minmax-group">
+                         <div><label for="rsi_os_min">Min:</label><input id="rsi_os_min" type="number" name="rsi_os_min" value="{{ form_data.rsi_os_min if form_data else '25' }}" min="0" max="50"></div>
+                         <div><label for="rsi_os_max">Max:</label><input id="rsi_os_max" type="number" name="rsi_os_max" value="{{ form_data.rsi_os_max if form_data else '35' }}" min="0" max="50"></div>
+                     </div>
+                     <div class="param-description">Level below which RSI signals oversold</div>
+                 </div>
+             </fieldset>
+
+            <fieldset id="macd-fieldset">
+                 <legend>
+                     <input type="checkbox" id="use_macd" name="use_macd" value="yes" {{ 'checked' if form_data.use_macd else '' }}>
+                     <label for="use_macd">MACD</label>
+                      <button type="button" class="randomize-btn" data-fieldset="macd">Randomize</button>
+                 </legend>
+                 <small><i>(Min value used for single runs)</i></small>
+                 
+                 <div class="param-row">
+                     <label>MACD Short Period (Fast EMA)</label>
+                      <div class="param-minmax-group">
+                         <div><label for="macd_short_min">Min:</label><input id="macd_short_min" type="number" name="macd_short_min" value="{{ form_data.macd_short_min if form_data else '10' }}" min="1"></div>
+                         <div><label for="macd_short_max">Max:</label><input id="macd_short_max" type="number" name="macd_short_max" value="{{ form_data.macd_short_max if form_data else '14' }}" min="1"></div>
+                     </div>
+                     <div class="param-description">Faster EMA period for MACD line</div>
+                 </div>
+                 <hr>
+                 <div class="param-row">
+                     <label>MACD Long Period (Slow EMA)</label>
+                      <div class="param-minmax-group">
+                         <div><label for="macd_long_min">Min:</label><input id="macd_long_min" type="number" name="macd_long_min" value="{{ form_data.macd_long_min if form_data else '24' }}" min="1"></div>
+                         <div><label for="macd_long_max">Max:</label><input id="macd_long_max" type="number" name="macd_long_max" value="{{ form_data.macd_long_max if form_data else '30' }}" min="1"></div>
+                     </div>
+                     <div class="param-description">Slower EMA period for MACD line</div>
+                 </div>
+                 <hr>
+                  <div class="param-row">
+                     <label>MACD Signal Period</label>
+                      <div class="param-minmax-group">
+                         <div><label for="macd_signal_min">Min:</label><input id="macd_signal_min" type="number" name="macd_signal_min" value="{{ form_data.macd_signal_min if form_data else '8' }}" min="1"></div>
+                         <div><label for="macd_signal_max">Max:</label><input id="macd_signal_max" type="number" name="macd_signal_max" value="{{ form_data.macd_signal_max if form_data else '10' }}" min="1"></div>
+                     </div>
+                     <div class="param-description">EMA period for the signal line</div>
+                 </div>
+             </fieldset>
+        </div>
+
+        <!-- Exit Parameters -->
+        <fieldset>
+             <legend>
+                 <input type="checkbox" id="use_stop_loss" name="use_stop_loss" value="yes" {{ 'checked' if form_data.use_stop_loss else '' }} style="margin-right: 3px;">
+                 <label for="use_stop_loss" style="margin-right: 15px; color: inherit; font-weight: bold;">Stop Loss (ATR)</label>
+                 
+                 <input type="checkbox" id="use_take_profit" name="use_take_profit" value="yes" {{ 'checked' if form_data.use_take_profit else '' }} style="margin-right: 3px;">
+                 <label for="use_take_profit" style="color: inherit; font-weight: bold;">Take Profit (ATR)</label>
+             </legend>
+              <small><i>(Min value used for single runs)</i></small>
+              
+               <div class="param-row" style="margin-bottom: 20px;">
+                  <label>ATR Period</label>
+                  <div class="param-minmax-group">
+                         <div><label for="atr_period_min">Min:</label><input id="atr_period_min" type="number" name="atr_period_min" value="{{ form_data.atr_period_min if form_data else '10' }}" min="1"></div>
+                         <div><label for="atr_period_max">Max:</label><input id="atr_period_max" type="number" name="atr_period_max" value="{{ form_data.atr_period_max if form_data else '20' }}" min="1"></div>
+                  </div>
+                  <div class="param-description">Lookback period for ATR calculation</div>
+              </div>
+
+              <div class="param-row">
+                  <label>Stop Loss (ATR Multiplier)</label>
+                  <div class="param-minmax-group">
+                         <div><label for="stop_atr_multiplier_min">Min:</label><input id="stop_atr_multiplier_min" type="number" name="stop_atr_multiplier_min" value="{{ form_data.stop_atr_multiplier_min if form_data else '1.5' }}" step="0.1" min="0.1"></div>
+                         <div><label for="stop_atr_multiplier_max">Max:</label><input id="stop_atr_multiplier_max" type="number" name="stop_atr_multiplier_max" value="{{ form_data.stop_atr_multiplier_max if form_data else '3.0' }}" step="0.1" min="0.1"></div>
+                  </div>
+                  <div class="param-description">Multiplier of ATR below entry for stop loss (e.g., 2.0)</div>
+              </div>
+             <hr>
+              <div class="param-row">
+                  <label>Take Profit (ATR Multiplier)</label>
+                  <div class="param-minmax-group">
+                         <div><label for="take_profit_atr_multiplier_min">Min:</label><input id="take_profit_atr_multiplier_min" type="number" name="take_profit_atr_multiplier_min" value="{{ form_data.take_profit_atr_multiplier_min if form_data else '3.0' }}" step="0.1" min="0.1"></div>
+                         <div><label for="take_profit_atr_multiplier_max">Max:</label><input id="take_profit_atr_multiplier_max" type="number" name="take_profit_atr_multiplier_max" value="{{ form_data.take_profit_atr_multiplier_max if form_data else '6.0' }}" step="0.1" min="0.1"></div>
+                  </div>
+                  <div class="param-description">Multiplier of ATR above entry for take profit (e.g., 4.0)</div>
+              </div>
+         </fieldset>
+
+        <!-- Run Options -->
+        <fieldset>
+            <legend>Run Options</legend>
+            <div class="run-options-container">
+                 <div>
+                     <input type="checkbox" id="optimize" name="optimize" value="yes" {{ 'checked' if form_data.optimize else '' }} style="transform: scale(1.2);">
+                     <label for="optimize" style="font-weight: 500;">Run Optimization?</label>
+                 </div>
+                 <div>
+                     <label for="opt_steps">Optimization Steps:</label>
+                     <input type="number" id="opt_steps" name="opt_steps" value="{{ form_data.opt_steps if form_data else '4' }}" min="1">
+                 </div>
+                 <div>
+                     <label for="max_cpus">Max CPUs for Opt:</label>
+                     <input type="number" id="max_cpus" name="max_cpus" value="{{ form_data.max_cpus if form_data else '1' }}" min="1">
+                 </div>
+                 <!-- New Plot Toggle -->
+                 <div>
+                     <input type="checkbox" id="generate_plots" name="generate_plots" value="yes" {{ 'checked' if form_data.generate_plots else '' }} style="transform: scale(1.2);">
+                     <label for="generate_plots" style="font-weight: 500;">Generate Plots?</label>
+                 </div>
+            </div>
+             <p class="opt-note">(If Optimization checked, uses Min/Max ranges with steps. Plots generated only if Optimization and Generate Plots are checked. If Optimization unchecked, uses Min values for a single run.)</p>
+        </fieldset>
+
+        <button type="submit">Run Backtest / Optimization</button>
+        <button type="button" id="save-settings-btn" style="margin-top: 10px; background-color: #28a745; width: auto; padding: 8px 15px; font-size: 0.9em;">Save Current Settings</button>
+
+    </form>
+
+    <!-- Results Area -->
+    {% if error %}
+        <div class="error"><strong>Error:</strong> {{ error }}</div>
+    {% endif %}
+    {% if single_results %}
+        <div class="results">
+            <h2>Single Backtest Results ({{ symbol }})</h2>
+            <ul>
+                {% for key, value in single_results.items() %}
+                    <li><strong>{{ key.replace('_', ' ').title() }}:</strong> 
+                        {% if 'pct' in key or 'ratio' in key or key == 'pnl_net' or key == 'final_value' %}
+                            {{ "%.2f" | format(value) }}{% if 'pct' in key %}%{% endif %}
+                        {% else %}
+                            {{ value }}
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+    {% if opt_results_html %}
+        <div class="results">
+            <h2>Optimization Results ({{ symbol }})</h2>
+             
+             {% if plot_info.top_value_plot or plot_info.top_sharpe_plot %}
+                 <div class="plot-links" style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color);">
+                     <strong>Download Plots:</strong>
+                     {% if plot_info.top_value_plot %}
+                         <a href="{{ url_for('serve_plot', filename=plot_info.top_value_plot) }}" target="_blank" download="{{ plot_info.top_value_plot }}" class="plot-link">Top Final Value</a>
+                     {% endif %}
+                     {% if plot_info.top_sharpe_plot %}
+                         <a href="{{ url_for('serve_plot', filename=plot_info.top_sharpe_plot) }}" target="_blank" download="{{ plot_info.top_sharpe_plot }}" class="plot-link">Top Sharpe Ratio</a>
+                     {% endif %}
+                 </div>
+             {% endif %}
+
+            {{ opt_results_html | safe }}
+        </div>
+    {% endif %}
+
+    <!-- History Area -->
+    <div id="history-area" class="results" style="margin-top: 40px; background-color: #f1f1f1; border-left-color: #6c757d;">
+        <h2>Run History</h2>
+        <p><small>History is saved in your browser's local storage. Clearing browser data will remove it.</small></p>
+        <button type="button" id="clear-history-btn" style="background-color: #dc3545; width:auto; padding: 5px 10px; font-size: 0.8em; margin-bottom:10px;">Clear History</button>
+        <div style="overflow-x: auto;">
+            <table id="history-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Type</th>
+                        <th>Symbol</th>
+                        <th>Timeframe</th>
+                        <th>Return %</th>
+                        <th>Sharpe</th>
+                        <th>Trades</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- History rows will be populated by JavaScript -->
+                    <tr><td colspan="8">Loading history...</td></tr> 
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function getRandomInt(min, max) {
+            min = Math.ceil(min);
+            max = Math.floor(max);
+            return Math.floor(Math.random() * (max - min + 1)) + min; 
+        }
+
+        function randomizeParams(fieldsetId) {
+            console.log("Randomizing:", fieldsetId);
+            const fieldset = document.getElementById(fieldsetId + '-fieldset');
+            if (!fieldset) return;
+
+            const paramRows = fieldset.querySelectorAll('.param-row');
+            
+            paramRows.forEach(row => {
+                const minInput = row.querySelector('input[name$=\"_min\"]');
+                const maxInput = row.querySelector('input[name$=\"_max\"]');
+
+                if (minInput && maxInput) {
+                    let potentialMin = 1;
+                    let potentialMax = 50; // Default broad range
+                    const inputType = minInput.name; 
+                    
+                    // Define somewhat sensible default ranges per input type
+                    if (inputType.includes('_short')) potentialMax = 50;
+                    if (inputType.includes('_long')) potentialMax = 100;
+                    if (inputType.includes('rsi_period')) potentialMax = 30;
+                    if (inputType.includes('rsi_ob')) { potentialMin = 60; potentialMax = 90; }
+                    if (inputType.includes('rsi_os')) { potentialMin = 10; potentialMax = 40; }
+                    if (inputType.includes('macd_signal')) potentialMax = 20;
+                    // Add more specific ranges if needed
+
+                    // Generate two distinct random numbers within the potential range
+                    let rand1 = getRandomInt(potentialMin, potentialMax);
+                    let rand2 = getRandomInt(potentialMin, potentialMax);
+                    while (rand2 === rand1) { // Ensure they are different
+                        rand2 = getRandomInt(potentialMin, potentialMax);
+                    }
+                    
+                    // Assign the smaller to min, larger to max
+                    minInput.value = Math.min(rand1, rand2);
+                    maxInput.value = Math.max(rand1, rand2);
+
+                    // Special check for MACD long > short and RSI OB > OS
+                    if (fieldsetId === 'macd') {
+                        const shortMin = fieldset.querySelector('input[name="macd_short_min"]');
+                        const longMin = fieldset.querySelector('input[name="macd_long_min"]');
+                        const shortMax = fieldset.querySelector('input[name="macd_short_max"]');
+                        const longMax = fieldset.querySelector('input[name="macd_long_max"]');
+                        // Ensure long_min > short_min and long_max > short_max
+                        if (parseInt(longMin.value) <= parseInt(shortMin.value)) {
+                            longMin.value = parseInt(shortMin.value) + 1;
+                        }
+                         if (parseInt(longMax.value) <= parseInt(shortMax.value)) {
+                            longMax.value = parseInt(shortMax.value) + 1;
+                        }
+                        // Ensure long_max >= long_min
+                         if (parseInt(longMax.value) < parseInt(longMin.value)) {
+                             longMax.value = longMin.value;
+                         }
+                         // Ensure short_max >= short_min
+                         if (parseInt(shortMax.value) < parseInt(shortMin.value)) {
+                             shortMax.value = shortMin.value;
+                         }
+                    } 
+                    if (fieldsetId === 'rsi') {
+                        const obMin = fieldset.querySelector('input[name="rsi_ob_min"]');
+                        const osMin = fieldset.querySelector('input[name="rsi_os_min"]');
+                        const obMax = fieldset.querySelector('input[name="rsi_ob_max"]');
+                        const osMax = fieldset.querySelector('input[name="rsi_os_max"]');
+                        // Ensure ob_min > os_min and ob_max > os_max
+                         if (parseInt(obMin.value) <= parseInt(osMin.value)) {
+                             obMin.value = parseInt(osMin.value) + 1;
+                         }
+                         if (parseInt(obMax.value) <= parseInt(osMax.value)) {
+                             obMax.value = parseInt(osMax.value) + 1;
+                         }
+                          // Ensure ob_max >= ob_min
+                         if (parseInt(obMax.value) < parseInt(obMin.value)) {
+                             obMax.value = obMin.value;
+                         }
+                          // Ensure os_max >= os_min
+                         if (parseInt(osMax.value) < parseInt(osMin.value)) {
+                             osMax.value = osMin.value;
+                         }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const buttons = document.querySelectorAll('.randomize-btn');
+            buttons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const fieldsetId = button.getAttribute('data-fieldset');
+                    randomizeParams(fieldsetId);
+                });
+            });
+        });
+
+        // --- Load/Save Settings --- 
+        const settingsForm = document.querySelector('form');
+        const settingsKey = 'backtraderUISettings';
+
+        // Function to save form data to localStorage
+        function saveSettings() {
+            const formData = new FormData(settingsForm);
+            const settings = {};
+            // Iterate over form data entries
+            for (let [key, value] of formData.entries()) {
+                // Handle checkboxes explicitly - FormData only includes checked ones
+                const checkbox = settingsForm.querySelector(`input[type="checkbox"][name="${key}"]`);
+                if (checkbox) {
+                    settings[key] = checkbox.checked;
+                } else {
+                    settings[key] = value;
+                }
+            }
+            // Need to add unchecked checkboxes separately as FormData omits them
+            settingsForm.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                if (!settings.hasOwnProperty(cb.name)) { // Only add if not already present (i.e., was unchecked)
+                     settings[cb.name] = false;
+                }
+            });
+
+            try {
+                localStorage.setItem(settingsKey, JSON.stringify(settings));
+                alert('Settings saved successfully!');
+                console.log('Saved Settings:', settings);
+            } catch (e) {
+                console.error("Error saving settings to localStorage:", e);
+                alert('Error saving settings. LocalStorage might be full or disabled.');
+            }
+        }
+
+        // Function to load form data from localStorage
+        function loadSettings() {
+            try {
+                const savedSettings = localStorage.getItem(settingsKey);
+                if (savedSettings) {
+                    const settings = JSON.parse(savedSettings);
+                    console.log('Loading Settings:', settings);
+                    for (const key in settings) {
+                        const input = settingsForm.querySelector(`[name="${key}"]`);
+                        if (input) {
+                            if (input.type === 'checkbox') {
+                                input.checked = settings[key];
+                            } else if (input.type !== 'button' && input.type !== 'submit') { 
+                                input.value = settings[key];
+                            }
+                        }
+                    }
+                     console.log('Settings loaded.');
+                } else {
+                     console.log('No saved settings found.');
+                 }
+            } catch (e) {
+                console.error("Error loading settings from localStorage:", e);
+            }
+        }
+
+        // Add event listener for the save button
+        const saveButton = document.getElementById('save-settings-btn');
+        if (saveButton) {
+            saveButton.addEventListener('click', saveSettings);
+        }
+
+        // Add event listener to the form to save settings on submit
+        if (settingsForm) {
+            settingsForm.addEventListener('submit', () => {
+                console.log('Form submitted, auto-saving settings...');
+                saveSettings(); 
+                // No need to preventDefault, let the form submit normally
+            });
+        }
+
+        // Load settings when the page loads
+        loadSettings();
+
+        // --- History Management --- 
+        const historyKey = 'backtraderRunHistory';
+        const historyTableBody = document.querySelector('#history-table tbody');
+        const clearHistoryBtn = document.getElementById('clear-history-btn');
+
+        // Function to load history and populate the table
+        function loadHistory() {
+            if (!historyTableBody) return;
+            historyTableBody.innerHTML = ''; // Clear existing rows
+            let history = [];
+            try {
+                const savedHistory = localStorage.getItem(historyKey);
+                if (savedHistory) {
+                    history = JSON.parse(savedHistory);
+                }
+            } catch (e) {
+                console.error("Error loading history:", e);
+            }
+
+            if (history.length === 0) {
+                historyTableBody.innerHTML = '<tr><td colspan="8">No history found.</td></tr>';
+                return;
+            }
+
+            // Sort history newest first
+            history.sort((a, b) => b.timestamp - a.timestamp);
+
+            history.forEach((run, index) => {
+                const row = historyTableBody.insertRow();
+                const runDate = new Date(run.timestamp).toLocaleString();
+                const returnPct = run.results?.total_return_pct ?? run.results?.return_pct ?? 'N/A';
+                const sharpe = run.results?.sharpe_ratio ?? run.results?.sharpe ?? 'N/A';
+                const trades = run.results?.total_trades ?? run.results?.trades ?? 'N/A';
+                
+                row.innerHTML = `
+                    <td>${runDate}</td>
+                    <td>${run.type}</td>
+                    <td>${run.settings?.symbols_str ?? 'N/A'}</td>
+                    <td>${run.settings?.timeframe ?? 'N/A'}</td>
+                    <td>${typeof returnPct === 'number' ? returnPct.toFixed(2) + '%' : 'N/A'}</td>
+                    <td>${typeof sharpe === 'number' ? sharpe.toFixed(3) : 'N/A'}</td>
+                    <td>${trades}</td>
+                    <td><button type="button" class="load-settings-btn" data-index="${index}" style="font-size: 0.8em; padding: 2px 5px;">Load Settings</button></td>
+                `;
+            });
+            
+             // Add event listeners for the new Load Settings buttons
+            document.querySelectorAll('.load-settings-btn').forEach(button => {
+                 button.addEventListener('click', function() {
+                     const index = parseInt(this.getAttribute('data-index'));
+                     // Find the correct run data based on the *current* sorted history
+                     const historyForLoad = JSON.parse(localStorage.getItem(historyKey) || '[]').sort((a,b) => b.timestamp - a.timestamp);
+                     if (historyForLoad[index] && historyForLoad[index].settings) {
+                         loadSpecificSettings(historyForLoad[index].settings);
+                         alert('Settings loaded into form!');
+                         window.scrollTo(0, 0); // Scroll to top
+                     } else {
+                         alert('Could not load settings for this run.');
+                     }
+                 });
+             });
+        }
+
+        // Function to load specific settings object into the form (modified loadSettings)
+        function loadSpecificSettings(settings) {
+             console.log('Loading specific settings:', settings);
+             for (const key in settings) {
+                 const input = settingsForm.querySelector(`[name="${key}"]`);
+                 if (input) {
+                     if (input.type === 'checkbox') {
+                         input.checked = settings[key];
+                     } else if (input.type !== 'button' && input.type !== 'submit') { 
+                         input.value = settings[key];
+                     }
+                 }
+             }
+             console.log('Specific settings applied to form.');
+        }
+
+        // Function to clear history
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear the entire run history? This cannot be undone.')) {
+                try {
+                    localStorage.removeItem(historyKey);
+                    loadHistory(); // Refresh the table
+                    alert('History cleared.');
+                } catch (e) {
+                     console.error("Error clearing history:", e);
+                     alert('Could not clear history.');
+                }
+            }
+        }
+        
+        // Add event listener for clear history button
+        if(clearHistoryBtn) {
+            clearHistoryBtn.addEventListener('click', clearHistory);
+        }
+
+        // Load history when the page loads
+        loadHistory();
+
+        // Get run summary data from Flask template (null if no run completed)
+        const runSummaryData = JSON.parse('{{ run_summary | tojson | safe if run_summary else 'null' }}');
+
+        // Function to save a new run to history
+        function saveRunToHistory(runData) {
+            if (!runData) return;
+            console.log('Saving run to history:', runData);
+            let history = [];
+             try {
+                 const savedHistory = localStorage.getItem(historyKey);
+                 if (savedHistory) {
+                     history = JSON.parse(savedHistory);
+                 }
+             } catch (e) {
+                 console.error("Error loading existing history before saving:", e);
+                 // Decide if you want to proceed or stop if history is corrupt
+             }
+             // Add the new run to the beginning
+            history.unshift(runData); 
+            // Optional: Limit history size (e.g., keep last 50 runs)
+            // history = history.slice(0, 50); 
+            try {
+                localStorage.setItem(historyKey, JSON.stringify(history));
+                console.log('Run saved to history.');
+            } catch (e) {
+                 console.error("Error saving updated history:", e);
+                 // Maybe alert the user history wasn't saved?
+            }
+        }
+
+        // Save the current run summary if it exists (after page load)
+        saveRunToHistory(runSummaryData);
+        
+        // Load history AFTER potentially saving the new run
+        loadHistory();
+
+    </script>
+</body>
+</html>
